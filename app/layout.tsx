@@ -3,7 +3,7 @@ import "@/styles/globals.css";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/providers/session-provider";
 
-import { cn, constructMetadata } from "../lib/utils";
+import { cn } from "../lib/utils";
 import { Toaster } from "@/components/ui/sonner";
 import { fontGeist, fontHeading, fontSans, fontUrban } from "@/assets/fonts";
 import { Inter } from "next/font/google";

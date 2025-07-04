@@ -83,8 +83,9 @@ export default function Home() {
       setTranscription(data.transcription);
       setProgress(100);
       setProcessingStep("Concluído!");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+      setError(errorMessage);
       setProgress(0);
       setProcessingStep("");
     } finally {

@@ -22,7 +22,7 @@ export default function LoginPage() {
     
     try {
       console.log("🔐 Iniciando login com Google...");
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/`,
@@ -36,9 +36,10 @@ export default function LoginPage() {
         console.log("✅ Login Google iniciado!");
         // O redirecionamento será automático
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("🚨 Erro no login Google:", err);
-      setError("Erro de conexão com Google");
+      const errorMessage = err instanceof Error ? err.message : "Erro de conexão com Google";
+      setError(errorMessage);
     } finally {
       setIsGoogleLoading(false);
     }

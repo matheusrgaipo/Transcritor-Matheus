@@ -47,8 +47,9 @@ export async function POST(req: NextRequest) {
     await storage.bucket(BUCKET_NAME).file(filename).delete().catch(() => {});
 
     return NextResponse.json({ transcription });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro na transcrição:", error);
-    return NextResponse.json({ message: "Erro ao processar o áudio.", error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    return NextResponse.json({ message: "Erro ao processar o áudio.", error: errorMessage }, { status: 500 });
   }
 } 

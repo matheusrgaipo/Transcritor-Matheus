@@ -96,11 +96,12 @@ export async function POST(req: NextRequest) {
       sessionId 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro no processamento:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return NextResponse.json({ 
       message: "Erro ao processar o arquivo.", 
-      error: error.message 
+      error: errorMessage 
     }, { status: 500 });
   } finally {
     // Limpar arquivos temporários
