@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, unlink } from "fs/promises";
+import { writeFile, unlink, readFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -33,10 +33,9 @@ async function fileToBase64(filePath: string): Promise<string> {
   console.log("🔄 [LOG] Convertendo arquivo para base64:", filePath);
   
   try {
-    const fs = await import('fs/promises');
-    console.log("✅ [LOG] Módulo fs/promises importado com sucesso");
+    console.log("✅ [LOG] Usando readFile importado estaticamente");
     
-    const buffer = await fs.readFile(filePath);
+    const buffer = await readFile(filePath);
     console.log("✅ [LOG] Arquivo lido com sucesso. Tamanho do buffer:", buffer.length, "bytes");
     
     const base64 = buffer.toString('base64');
