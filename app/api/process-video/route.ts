@@ -5,11 +5,11 @@ import { tmpdir } from "os";
 import ffmpeg from "fluent-ffmpeg";
 
 // Função para configurar FFmpeg (só executa em runtime)
-function configureFfmpeg() {
+async function configureFfmpeg() {
   try {
-    const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
-    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-    console.log(`🔧 FFmpeg configurado: ${ffmpegInstaller.path}`);
+    const ffmpegInstaller = await import("@ffmpeg-installer/ffmpeg");
+    ffmpeg.setFfmpegPath(ffmpegInstaller.default.path);
+    console.log(`🔧 FFmpeg configurado: ${ffmpegInstaller.default.path}`);
     return true;
   } catch (error) {
     console.error("❌ Erro ao configurar FFmpeg:", error);
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
 
     // Verificar se FFmpeg está disponível
     let useFFmpeg = true;
-    if (!configureFfmpeg()) {
+    if (!await configureFfmpeg()) {
       useFFmpeg = false;
     }
 
