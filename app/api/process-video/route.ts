@@ -3,10 +3,19 @@ import { writeFile, unlink } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 import ffmpeg from "fluent-ffmpeg";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 
-// Configurar o caminho do FFmpeg para usar o binário instalado
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+// Função para configurar FFmpeg (só executa em runtime)
+function configureFfmpeg() {
+  try {
+    const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+    console.log(`🔧 FFmpeg configurado: ${ffmpegInstaller.path}`);
+    return true;
+  } catch (error) {
+    console.error("❌ Erro ao configurar FFmpeg:", error);
+    return false;
+  }
+}
 
 // Função para processar áudio diretamente (fallback sem FFmpeg)
 async function processAudioDirectly(inputPath: string): Promise<string> {
@@ -24,6 +33,11 @@ function isAudioFile(filename: string): boolean {
 // Função para converter arquivo para FLAC otimizado para transcrição
 async function convertToFlac(inputPath: string, outputPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
+    // Timeout de segurança para evitar travamento
+    const timeout = setTimeout(() => {
+      reject(new Error("Timeout na conversão FFmpeg (30s)"));
+    }, 30000);
+
     ffmpeg(inputPath)
       .output(outputPath)
       .audioCodec('flac')
@@ -43,10 +57,12 @@ async function convertToFlac(inputPath: string, outputPath: string): Promise<voi
         console.log(`⏳ Progresso: ${Math.round(progress.percent || 0)}%`);
       })
       .on('end', () => {
+        clearTimeout(timeout);
         console.log(`✅ Conversão concluída: ${outputPath}`);
         resolve();
       })
       .on('error', (err) => {
+        clearTimeout(timeout);
         console.error('❌ Erro na conversão:', err);
         reject(err);
       })
@@ -96,10 +112,7 @@ export async function POST(req: NextRequest) {
 
     // Verificar se FFmpeg está disponível
     let useFFmpeg = true;
-    try {
-      console.log(`🔧 FFmpeg path: ${ffmpegInstaller.path}`);
-    } catch (error) {
-      console.error("❌ FFmpeg não disponível:", error);
+    if (!configureFfmpeg()) {
       useFFmpeg = false;
     }
 
