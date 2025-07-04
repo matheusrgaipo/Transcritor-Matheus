@@ -2,72 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, unlink } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
-import ffmpeg from "fluent-ffmpeg";
-
-// Função para configurar FFmpeg (só executa em runtime)
-async function configureFfmpeg() {
-  try {
-    const ffmpegInstaller = await import("@ffmpeg-installer/ffmpeg");
-    ffmpeg.setFfmpegPath(ffmpegInstaller.default.path);
-    console.log(`🔧 FFmpeg configurado: ${ffmpegInstaller.default.path}`);
-    return true;
-  } catch (error) {
-    console.error("❌ Erro ao configurar FFmpeg:", error);
-    return false;
-  }
-}
-
-// Função para processar áudio diretamente (fallback sem FFmpeg)
-async function processAudioDirectly(inputPath: string): Promise<string> {
-  console.log("🔄 Processando áudio diretamente (sem conversão)");
-  return await fileToBase64(inputPath);
-}
 
 // Função para verificar se o arquivo é áudio
 function isAudioFile(filename: string): boolean {
-  const audioExtensions = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a'];
+  const audioExtensions = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.webm'];
   const ext = filename.toLowerCase().split('.').pop();
   return audioExtensions.includes(`.${ext}`);
 }
 
-// Função para converter arquivo para FLAC otimizado para transcrição
-async function convertToFlac(inputPath: string, outputPath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // Timeout de segurança para evitar travamento
-    const timeout = setTimeout(() => {
-      reject(new Error("Timeout na conversão FFmpeg (30s)"));
-    }, 30000);
-
-    ffmpeg(inputPath)
-      .output(outputPath)
-      .audioCodec('flac')
-      .audioChannels(1) // Mono para melhor reconhecimento
-      .audioFrequency(16000) // Taxa de amostragem de 16kHz
-      .audioBitrate('192k') // Alta qualidade para FLAC
-      .outputOptions([
-        '-ar 16000', // Taxa de amostragem fixa em 16kHz
-        '-ac 1', // Canal mono
-        '-sample_fmt s16', // Formato de amostra LINEAR16
-        '-compression_level 0' // Máxima qualidade de compressão FLAC
-      ])
-      .on('start', (commandLine) => {
-        console.log('🔄 Comando FFmpeg:', commandLine);
-      })
-      .on('progress', (progress) => {
-        console.log(`⏳ Progresso: ${Math.round(progress.percent || 0)}%`);
-      })
-      .on('end', () => {
-        clearTimeout(timeout);
-        console.log(`✅ Conversão concluída: ${outputPath}`);
-        resolve();
-      })
-      .on('error', (err) => {
-        clearTimeout(timeout);
-        console.error('❌ Erro na conversão:', err);
-        reject(err);
-      })
-      .run();
-  });
+// Função para processar áudio diretamente (sem conversão)
+async function processAudioDirectly(inputPath: string): Promise<string> {
+  console.log("🎵 Processando arquivo de áudio diretamente");
+  return await fileToBase64(inputPath);
 }
 
 // Função para converter arquivo para base64
@@ -79,7 +25,6 @@ async function fileToBase64(filePath: string): Promise<string> {
 
 export async function POST(req: NextRequest) {
   let tempInputPath: string | null = null;
-  let tempOutputPath: string | null = null;
 
   try {
     const formData = await req.formData();
@@ -97,12 +42,18 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Gerar nomes únicos para arquivos temporários
+    // Verificar se é arquivo de áudio
+    if (!isAudioFile(file.name)) {
+      return NextResponse.json({ 
+        message: "Formato não suportado. Envie um arquivo de áudio (.mp3, .wav, .flac, .aac, .ogg, .m4a, .webm)." 
+      }, { status: 400 });
+    }
+
+    // Gerar nome único para arquivo temporário
     const sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 10);
     const inputExtension = file.name.split('.').pop() || 'tmp';
     
     tempInputPath = join(tmpdir(), `input_${sessionId}.${inputExtension}`);
-    tempOutputPath = join(tmpdir(), `output_${sessionId}.flac`);
 
     // Salvar arquivo enviado temporariamente
     const bytes = await file.arrayBuffer();
@@ -110,28 +61,9 @@ export async function POST(req: NextRequest) {
 
     console.log(`🎬 Processando arquivo: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
 
-    // Verificar se FFmpeg está disponível
-    let useFFmpeg = true;
-    if (!await configureFfmpeg()) {
-      useFFmpeg = false;
-    }
-
-    let audioBase64: string;
-
-    // Se é arquivo de áudio e FFmpeg não está disponível, processar diretamente
-    if (!useFFmpeg && isAudioFile(file.name)) {
-      console.log("🎵 Processando arquivo de áudio diretamente");
-      audioBase64 = await processAudioDirectly(tempInputPath);
-    } else if (!useFFmpeg) {
-      return NextResponse.json({ 
-        message: "FFmpeg não disponível. Envie um arquivo de áudio (.mp3, .wav, .flac, etc.) para processamento direto." 
-      }, { status: 500 });
-    } else {
-      // Converter para FLAC otimizado usando FFmpeg
-      console.log("🔄 Convertendo com FFmpeg");
-      await convertToFlac(tempInputPath, tempOutputPath);
-      audioBase64 = await fileToBase64(tempOutputPath);
-    }
+    // Processar arquivo de áudio diretamente
+    console.log("🎵 Processando arquivo de áudio diretamente");
+    const audioBase64 = await processAudioDirectly(tempInputPath);
 
     // Chamar a API de transcrição interna
     const transcriptionResponse = await fetch(`${req.nextUrl.origin}/api/transcribe`, {
@@ -150,7 +82,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       transcription,
       originalFile: file.name,
-      processedFormat: 'FLAC (16kHz, Mono)',
+      processedFormat: 'Áudio Original (sem conversão)',
       sessionId 
     });
 
@@ -162,12 +94,9 @@ export async function POST(req: NextRequest) {
       error: errorMessage 
     }, { status: 500 });
   } finally {
-    // Limpar arquivos temporários
+    // Limpar arquivo temporário
     if (tempInputPath) {
       try { await unlink(tempInputPath); } catch {}
-    }
-    if (tempOutputPath) {
-      try { await unlink(tempOutputPath); } catch {}
     }
   }
 } 
