@@ -16,7 +16,7 @@ O "Matheus o Transcritor" é uma ferramenta completa de transcrição que permit
 
 ### 🎵 Processamento de Arquivos
 - **Suporte Multimídia**: Aceita arquivos de áudio e vídeo
-- **Conversão Automática**: FFmpeg integrado para conversão para formato otimizado
+- **Processamento Direto**: Suporte nativo a múltiplos formatos de áudio
 - **Formatos Suportados**: MP3, MP4, WAV, M4A, MOV, AVI e outros
 - **Otimização**: Conversão automática para FLAC 16kHz mono
 
@@ -47,7 +47,7 @@ O "Matheus o Transcritor" é uma ferramenta completa de transcrição que permit
 - **Supabase**: Backend-as-a-Service para autenticação e banco de dados
 - **Google Cloud Speech-to-Text**: API de transcrição
 - **Google Cloud Storage**: Armazenamento de arquivos
-- **FFmpeg**: Processamento de arquivos multimídia
+- **Processamento Nativo**: Suporte direto a arquivos de áudio
 - **Next.js API Routes**: Endpoints do servidor
 
 ### Autenticação & Segurança
@@ -259,4 +259,4 @@ Para suporte e dúvidas:
 - [Documentação do Google Cloud Speech-to-Text](https://cloud.google.com/speech-to-text/docs)
 - [Documentação do Supabase](https://supabase.com/docs)
 - [Documentação do Next.js](https://nextjs.org/docs)
-- [Documentação do FFmpeg](https://ffmpeg.org/documentation.html)
+- [Documentação do Next.js](https://nextjs.org/docs)

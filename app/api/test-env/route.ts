@@ -3,8 +3,8 @@ import { createSpeechClient } from "@/lib/googleSpeechClient";
 
 export async function GET() {
   try {
-    const envVars = {
-      // NextAuth
+  const envVars = {
+    // NextAuth
       NEXTAUTH_URL: !!process.env.NEXTAUTH_URL,
       NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
       
@@ -21,8 +21,8 @@ export async function GET() {
       GOOGLE_CLOUD_PRIVATE_KEY_STORAGE: !!process.env.GOOGLE_CLOUD_PRIVATE_KEY_STORAGE,
       GOOGLE_CLOUD_BUCKET_NAME_STORAGE: !!process.env.GOOGLE_CLOUD_BUCKET_NAME_STORAGE,
       GOOGLE_CLOUD_RECOGNIZER_ID: !!process.env.GOOGLE_CLOUD_RECOGNIZER_ID,
-      
-      // Supabase
+    
+    // Supabase
       NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       
@@ -35,7 +35,7 @@ export async function GET() {
     let googleCloudError = null;
     
     try {
-      const client = createSpeechClient();
+      createSpeechClient();
       googleCloudStatus = "✅ Cliente criado com sucesso";
       
       // Verificar se as credenciais têm o formato correto
@@ -61,9 +61,9 @@ export async function GET() {
       googleCloudStatus = `❌ Erro: ${googleCloudError}`;
     }
 
-    return NextResponse.json({
+  return NextResponse.json({
       message: "Teste de variáveis de ambiente",
-      timestamp: new Date().toISOString(),
+    timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       envVars,
       googleCloud: {

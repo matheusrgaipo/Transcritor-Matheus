@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Combinar todos os resultados
-      const transcription = response.results
+    const transcription = response.results
         .map(result => result.alternatives?.[0]?.transcript || '')
         .join(' ')
         .trim();

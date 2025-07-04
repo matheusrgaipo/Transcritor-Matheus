@@ -67,7 +67,7 @@ export default function Home() {
       formData.append('file', selectedFile);
 
       setProgress(30);
-      setProcessingStep("Processando com FFmpeg...");
+      setProcessingStep("Processando arquivo de áudio...");
 
       const response = await fetch("/api/process-video", {
         method: "POST",

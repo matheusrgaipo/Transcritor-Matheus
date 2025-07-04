@@ -28,8 +28,8 @@ export function createSpeechClient() {
     console.log("📧 Client Email:", clientEmail);
     console.log("🔑 Project ID:", projectId);
     
-    return new SpeechClient({
-      credentials: {
+  return new SpeechClient({
+    credentials: {
         client_email: clientEmail,
         private_key: formattedPrivateKey,
       },
@@ -47,7 +47,7 @@ export async function testGoogleCloudConnection() {
     const client = createSpeechClient();
     
     // Fazer uma chamada simples para testar a autenticação
-    const [operation] = await client.longRunningRecognize({
+    await client.longRunningRecognize({
       config: {
         encoding: 'LINEAR16',
         sampleRateHertz: 16000,
