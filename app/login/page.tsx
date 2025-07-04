@@ -80,9 +80,10 @@ export default function LoginPage() {
           router.push("/");
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("🚨 Erro na requisição:", err);
-      setError("Erro de conexão com o servidor");
+      const errorMessage = err instanceof Error ? err.message : "Erro de conexão com o servidor";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

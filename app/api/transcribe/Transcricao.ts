@@ -1,8 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
-import https from 'https';
-import { Console } from 'console';
 
 const pastaVideos = '/Users/matheusgaipo/Documents/Drive Turbo'; // Pasta de entrada
 const pastaVideosProcessados = path.join(pastaVideos, 'Videos Processados'); // Pasta para vídeos processados
