@@ -5,80 +5,138 @@ import { tmpdir } from "os";
 
 // Função para verificar se o arquivo é áudio
 function isAudioFile(filename: string): boolean {
+  console.log("🔍 [LOG] Verificando se arquivo é áudio:", filename);
   const audioExtensions = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.webm'];
   const ext = filename.toLowerCase().split('.').pop();
-  return audioExtensions.includes(`.${ext}`);
+  const isAudio = audioExtensions.includes(`.${ext}`);
+  console.log("🔍 [LOG] Extensão encontrada:", ext, "| É áudio:", isAudio);
+  return isAudio;
 }
 
 // Função para processar áudio diretamente (sem conversão)
 async function processAudioDirectly(inputPath: string): Promise<string> {
-  console.log("🎵 Processando arquivo de áudio diretamente");
-  return await fileToBase64(inputPath);
+  console.log("🎵 [LOG] Iniciando processamento direto do áudio");
+  console.log("📁 [LOG] Caminho do arquivo:", inputPath);
+  
+  try {
+    const result = await fileToBase64(inputPath);
+    console.log("✅ [LOG] Conversão para base64 concluída. Tamanho:", result.length, "caracteres");
+    return result;
+  } catch (error) {
+    console.error("❌ [LOG] Erro na conversão para base64:", error);
+    throw error;
+  }
 }
 
 // Função para converter arquivo para base64
 async function fileToBase64(filePath: string): Promise<string> {
-  const fs = await import('fs/promises');
-  const buffer = await fs.readFile(filePath);
-  return buffer.toString('base64');
+  console.log("🔄 [LOG] Convertendo arquivo para base64:", filePath);
+  
+  try {
+    const fs = await import('fs/promises');
+    console.log("✅ [LOG] Módulo fs/promises importado com sucesso");
+    
+    const buffer = await fs.readFile(filePath);
+    console.log("✅ [LOG] Arquivo lido com sucesso. Tamanho do buffer:", buffer.length, "bytes");
+    
+    const base64 = buffer.toString('base64');
+    console.log("✅ [LOG] Conversão para base64 concluída");
+    
+    return base64;
+  } catch (error) {
+    console.error("❌ [LOG] Erro na função fileToBase64:", error);
+    throw error;
+  }
 }
 
 export async function POST(req: NextRequest) {
+  console.log("🚀 [LOG] === INICIANDO PROCESSAMENTO DE VÍDEO/ÁUDIO ===");
+  console.log("📅 [LOG] Timestamp:", new Date().toISOString());
+  
   let tempInputPath: string | null = null;
 
   try {
+    console.log("📥 [LOG] Recebendo dados do formulário...");
     const formData = await req.formData();
+    console.log("✅ [LOG] FormData recebido com sucesso");
+    
     const file = formData.get('file') as File;
+    console.log("📄 [LOG] Arquivo extraído:", file ? `${file.name} (${file.size} bytes)` : 'null');
     
     if (!file) {
+      console.log("❌ [LOG] Nenhum arquivo enviado");
       return NextResponse.json({ message: "Nenhum arquivo enviado." }, { status: 400 });
     }
 
+    console.log("🔍 [LOG] Verificando tamanho do arquivo...");
     // Verificar tamanho do arquivo (limite para Vercel: ~50MB)
     const maxSize = 50 * 1024 * 1024; // 50MB
     if (file.size > maxSize) {
+      console.log("❌ [LOG] Arquivo muito grande:", file.size, "bytes (máximo:", maxSize, "bytes)");
       return NextResponse.json({ 
         message: "Arquivo muito grande. Tamanho máximo: 50MB." 
       }, { status: 400 });
     }
+    console.log("✅ [LOG] Tamanho do arquivo OK:", file.size, "bytes");
 
+    console.log("🔍 [LOG] Verificando formato do arquivo...");
     // Verificar se é arquivo de áudio
     if (!isAudioFile(file.name)) {
+      console.log("❌ [LOG] Formato não suportado:", file.name);
       return NextResponse.json({ 
         message: "Formato não suportado. Envie um arquivo de áudio (.mp3, .wav, .flac, .aac, .ogg, .m4a, .webm)." 
       }, { status: 400 });
     }
+    console.log("✅ [LOG] Formato de arquivo válido");
 
+    console.log("🔧 [LOG] Gerando nome único para arquivo temporário...");
     // Gerar nome único para arquivo temporário
     const sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 10);
     const inputExtension = file.name.split('.').pop() || 'tmp';
     
     tempInputPath = join(tmpdir(), `input_${sessionId}.${inputExtension}`);
+    console.log("📁 [LOG] Caminho temporário gerado:", tempInputPath);
 
+    console.log("💾 [LOG] Salvando arquivo temporariamente...");
     // Salvar arquivo enviado temporariamente
     const bytes = await file.arrayBuffer();
+    console.log("✅ [LOG] ArrayBuffer obtido. Tamanho:", bytes.byteLength, "bytes");
+    
     await writeFile(tempInputPath, new Uint8Array(bytes));
+    console.log("✅ [LOG] Arquivo salvo temporariamente em:", tempInputPath);
 
-    console.log(`🎬 Processando arquivo: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+    console.log(`🎬 [LOG] Processando arquivo: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
 
+    console.log("🔄 [LOG] Iniciando processamento de áudio...");
     // Processar arquivo de áudio diretamente
-    console.log("🎵 Processando arquivo de áudio diretamente");
+    console.log("🎵 [LOG] Processando arquivo de áudio diretamente");
     const audioBase64 = await processAudioDirectly(tempInputPath);
+    console.log("✅ [LOG] Processamento de áudio concluído. Tamanho base64:", audioBase64.length);
 
+    console.log("🌐 [LOG] Chamando API de transcrição interna...");
     // Chamar a API de transcrição interna
-    const transcriptionResponse = await fetch(`${req.nextUrl.origin}/api/transcribe`, {
+    const transcriptionUrl = `${req.nextUrl.origin}/api/transcribe`;
+    console.log("🔗 [LOG] URL da transcrição:", transcriptionUrl);
+    
+    const transcriptionResponse = await fetch(transcriptionUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ audioBase64 }),
     });
+    console.log("📡 [LOG] Resposta da API de transcrição recebida. Status:", transcriptionResponse.status);
 
     if (!transcriptionResponse.ok) {
+      console.log("❌ [LOG] Erro na resposta da API de transcrição");
       const error = await transcriptionResponse.json();
+      console.log("📄 [LOG] Detalhes do erro:", error);
       throw new Error(error.message || 'Erro na transcrição');
     }
 
+    console.log("✅ [LOG] Extraindo dados da transcrição...");
     const { transcription } = await transcriptionResponse.json();
+    console.log("📝 [LOG] Transcrição obtida:", transcription ? transcription.substring(0, 100) + "..." : "vazia");
 
+    console.log("🎉 [LOG] Processamento concluído com sucesso!");
     return NextResponse.json({ 
       transcription,
       originalFile: file.name,
@@ -87,16 +145,31 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    console.error("Erro no processamento:", error);
+    console.error("❌ [LOG] ERRO NO PROCESSAMENTO:", error);
+    console.error("🔍 [LOG] Stack trace:", error instanceof Error ? error.stack : 'N/A');
+    console.error("🔍 [LOG] Tipo do erro:", typeof error);
+    console.error("🔍 [LOG] Nome do erro:", error instanceof Error ? error.constructor.name : 'N/A');
+    
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("📄 [LOG] Mensagem de erro:", errorMessage);
+    
     return NextResponse.json({ 
       message: "Erro ao processar o arquivo.", 
-      error: errorMessage 
+      error: errorMessage,
+      timestamp: new Date().toISOString(),
+      tempPath: tempInputPath
     }, { status: 500 });
   } finally {
+    console.log("🧹 [LOG] Limpando arquivo temporário...");
     // Limpar arquivo temporário
     if (tempInputPath) {
-      try { await unlink(tempInputPath); } catch {}
+      try { 
+        await unlink(tempInputPath); 
+        console.log("✅ [LOG] Arquivo temporário removido:", tempInputPath);
+      } catch (cleanupError) {
+        console.error("⚠️ [LOG] Erro ao remover arquivo temporário:", cleanupError);
+      }
     }
+    console.log("🏁 [LOG] === PROCESSAMENTO FINALIZADO ===");
   }
 } 
