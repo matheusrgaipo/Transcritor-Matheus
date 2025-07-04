@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google-cloud/speech": "^7.1.0",
     "@google-cloud/storage": "^7.16.0",
     "@prisma/client": "^6.11.1",
