@@ -1,0 +1,5 @@
+// Linha 25 em app/login/page.tsx - ANTES:
+redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/`,
+
+// Linha 25 em app/login/page.tsx - DEPOIS:
+redirectTo: 'https://transcritor-matheus-ky8c.vercel.app/',
