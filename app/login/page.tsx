@@ -25,7 +25,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/`,
+          redirectTo: `https://transcritor-matheus-ky8c.vercel.app/`,
         },
       });
       
