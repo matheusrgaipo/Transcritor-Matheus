@@ -42,20 +42,74 @@ export function createSpeechClient() {
 
   try {
     console.log("🔄 [LOG] Formatando chave privada...");
+    console.log("🔍 [LOG] Chave privada original - tamanho:", privateKey.length);
+    console.log("🔍 [LOG] Chave privada original - primeiros 100 chars:", privateKey.substring(0, 100));
+    console.log("🔍 [LOG] Chave privada original - últimos 100 chars:", privateKey.substring(privateKey.length - 100));
+    
     // Limpar e formatar a chave privada
     const formattedPrivateKey = privateKey.replace(/\\n/g, "\n");
+    console.log("🔍 [LOG] Chave privada formatada - tamanho:", formattedPrivateKey.length);
+    console.log("🔍 [LOG] Chave privada formatada - primeiros 100 chars:", formattedPrivateKey.substring(0, 100));
+    console.log("🔍 [LOG] Chave privada formatada - últimos 100 chars:", formattedPrivateKey.substring(formattedPrivateKey.length - 100));
     console.log("✅ [LOG] Chave privada formatada");
     
     console.log("🔍 [LOG] Validando formato da chave privada...");
-    // Validar se a chave privada tem o formato correto
-    if (!formattedPrivateKey.includes("-----BEGIN PRIVATE KEY-----") || 
-        !formattedPrivateKey.includes("-----END PRIVATE KEY-----")) {
+    const hasBegin = formattedPrivateKey.includes("-----BEGIN PRIVATE KEY-----");
+    const hasEnd = formattedPrivateKey.includes("-----END PRIVATE KEY-----");
+    
+    console.log("🔍 [LOG] Chave contém BEGIN:", hasBegin);
+    console.log("🔍 [LOG] Chave contém END:", hasEnd);
+    
+    // Verificar se a chave privada tem o formato correto
+    if (!hasBegin || !hasEnd) {
       console.error("❌ [LOG] Formato da chave privada inválido");
-      console.error("🔍 [LOG] Chave contém BEGIN:", formattedPrivateKey.includes("-----BEGIN PRIVATE KEY-----"));
-      console.error("🔍 [LOG] Chave contém END:", formattedPrivateKey.includes("-----END PRIVATE KEY-----"));
-      console.error("🔍 [LOG] Primeiros 50 caracteres da chave:", formattedPrivateKey.substring(0, 50));
-      console.error("🔍 [LOG] Últimos 50 caracteres da chave:", formattedPrivateKey.substring(formattedPrivateKey.length - 50));
-      throw new Error("Formato da chave privada inválido");
+      console.error("🔍 [LOG] Chave contém BEGIN:", hasBegin);
+      console.error("🔍 [LOG] Chave contém END:", hasEnd);
+      console.error("🔍 [LOG] Primeiros 200 caracteres da chave:", formattedPrivateKey.substring(0, 200));
+      console.error("🔍 [LOG] Últimos 200 caracteres da chave:", formattedPrivateKey.substring(formattedPrivateKey.length - 200));
+      
+      // Tentar diferentes formatos
+      console.log("🔧 [LOG] Tentando corrigir formato automaticamente...");
+      
+      // Remover aspas se existirem
+      let correctedKey = formattedPrivateKey.replace(/^"/, '').replace(/"$/, '');
+      console.log("🔍 [LOG] Após remover aspas - tamanho:", correctedKey.length);
+      
+      // Tentar diferentes padrões de escape
+      const patterns = [
+        correctedKey.replace(/\\n/g, "\n"),
+        correctedKey.replace(/\\\\/g, "\\"),
+        correctedKey.replace(/\\"/g, '"'),
+        correctedKey.replace(/\\r\\n/g, "\n"),
+        correctedKey.replace(/\\r/g, "\n"),
+      ];
+      
+      for (let i = 0; i < patterns.length; i++) {
+        const testKey = patterns[i];
+        const testHasBegin = testKey.includes("-----BEGIN PRIVATE KEY-----");
+        const testHasEnd = testKey.includes("-----END PRIVATE KEY-----");
+        
+        console.log(`🧪 [LOG] Teste ${i + 1}: BEGIN=${testHasBegin}, END=${testHasEnd}`);
+        
+        if (testHasBegin && testHasEnd) {
+          console.log(`✅ [LOG] Formato corrigido no teste ${i + 1}`);
+          console.log("🔍 [LOG] Chave corrigida - primeiros 100 chars:", testKey.substring(0, 100));
+          console.log("🔍 [LOG] Chave corrigida - últimos 100 chars:", testKey.substring(testKey.length - 100));
+          
+          // Usar a chave corrigida
+          const speechClient = new SpeechClient({
+            credentials: {
+              client_email: clientEmail,
+              private_key: testKey,
+            },
+            projectId: projectId,
+          });
+          console.log("✅ [LOG] SpeechClient criado com sucesso usando chave corrigida");
+          return speechClient;
+        }
+      }
+      
+      throw new Error("Formato da chave privada inválido - não foi possível corrigir automaticamente");
     }
     console.log("✅ [LOG] Formato da chave privada válido");
 
