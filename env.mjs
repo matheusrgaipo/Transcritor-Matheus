@@ -4,9 +4,10 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     // Google Cloud Storage
-    GOOGLE_CLOUD_PROJECT_ID_STORAGE: z.string().min(1),
-    GOOGLE_CLOUD_CLIENT_EMAIL_STORAGE: z.string().email(),
-    GOOGLE_CLOUD_BUCKET_NAME_STORAGE: z.string().min(1).optional(),
+          GOOGLE_CLOUD_PROJECT_ID_STORAGE: z.string().min(1),
+      GOOGLE_CLOUD_CLIENT_EMAIL_STORAGE: z.string().email(),
+      GOOGLE_CLOUD_PRIVATE_KEY_STORAGE: z.string().min(1),
+      GOOGLE_CLOUD_BUCKET_NAME_STORAGE: z.string().min(1).optional(),
     GOOGLE_CLOUD_RECOGNIZER_ID: z.string().min(1).optional(),
   },
   client: {

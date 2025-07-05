@@ -13,12 +13,31 @@ export function createSpeechClient() {
   console.log("🔑 [LOG] Private Key presente:", !!privateKey);
   console.log("🆔 [LOG] Project ID presente:", !!projectId);
 
-  if (!clientEmail || !privateKey || !projectId) {
-    console.error("❌ [LOG] Credenciais do Google Cloud não configuradas:");
-    console.error("- CLIENT_EMAIL:", !!clientEmail);
-    console.error("- PRIVATE_KEY:", !!privateKey);
-    console.error("- PROJECT_ID:", !!projectId);
-    throw new Error("Credenciais do Google Cloud não configuradas. Verifique as variáveis de ambiente.");
+  // Diagnóstico detalhado das variáveis
+  const missingVars = [];
+  if (!clientEmail) missingVars.push("GOOGLE_CLOUD_CLIENT_EMAIL_STORAGE");
+  if (!privateKey) missingVars.push("GOOGLE_CLOUD_PRIVATE_KEY_STORAGE");
+  if (!projectId) missingVars.push("GOOGLE_CLOUD_PROJECT_ID_STORAGE");
+
+  if (missingVars.length > 0) {
+    console.error("❌ [LOG] Variáveis de ambiente faltando:", missingVars.join(", "));
+    console.error("🔍 [LOG] Todas as variáveis de ambiente disponíveis:");
+    
+    // Listar todas as variáveis que começam com GOOGLE_CLOUD
+    const googleCloudVars = Object.keys(process.env).filter(key => key.startsWith('GOOGLE_CLOUD'));
+    console.error("📋 [LOG] Variáveis Google Cloud encontradas:", googleCloudVars);
+    
+    // Mostrar valores parciais (sem expor credenciais completas)
+    googleCloudVars.forEach(varName => {
+      const value = process.env[varName];
+      if (value) {
+        console.error(`   ${varName}: ${value.substring(0, 20)}...`);
+      } else {
+        console.error(`   ${varName}: VAZIO`);
+      }
+    });
+    
+    throw new Error(`Credenciais do Google Cloud não configuradas. Variáveis faltando: ${missingVars.join(", ")}`);
   }
 
   try {
@@ -34,6 +53,8 @@ export function createSpeechClient() {
       console.error("❌ [LOG] Formato da chave privada inválido");
       console.error("🔍 [LOG] Chave contém BEGIN:", formattedPrivateKey.includes("-----BEGIN PRIVATE KEY-----"));
       console.error("🔍 [LOG] Chave contém END:", formattedPrivateKey.includes("-----END PRIVATE KEY-----"));
+      console.error("🔍 [LOG] Primeiros 50 caracteres da chave:", formattedPrivateKey.substring(0, 50));
+      console.error("🔍 [LOG] Últimos 50 caracteres da chave:", formattedPrivateKey.substring(formattedPrivateKey.length - 50));
       throw new Error("Formato da chave privada inválido");
     }
     console.log("✅ [LOG] Formato da chave privada válido");
