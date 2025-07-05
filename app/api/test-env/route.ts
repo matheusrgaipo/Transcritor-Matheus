@@ -3,18 +3,7 @@ import { createSpeechClient } from "@/lib/googleSpeechClient";
 
 export async function GET() {
   try {
-  const envVars = {
-    // NextAuth
-      NEXTAUTH_URL: !!process.env.NEXTAUTH_URL,
-      NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
-      
-      // JWT
-      JWT_SECRET: !!process.env.JWT_SECRET,
-      
-      // Google OAuth
-      GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
-      
+    const envVars = {
       // Google Cloud
       GOOGLE_CLOUD_PROJECT_ID_STORAGE: !!process.env.GOOGLE_CLOUD_PROJECT_ID_STORAGE,
       GOOGLE_CLOUD_CLIENT_EMAIL_STORAGE: !!process.env.GOOGLE_CLOUD_CLIENT_EMAIL_STORAGE,
@@ -22,7 +11,7 @@ export async function GET() {
       GOOGLE_CLOUD_BUCKET_NAME_STORAGE: !!process.env.GOOGLE_CLOUD_BUCKET_NAME_STORAGE,
       GOOGLE_CLOUD_RECOGNIZER_ID: !!process.env.GOOGLE_CLOUD_RECOGNIZER_ID,
     
-    // Supabase
+      // Supabase
       NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       
@@ -61,9 +50,9 @@ export async function GET() {
       googleCloudStatus = `❌ Erro: ${googleCloudError}`;
     }
 
-  return NextResponse.json({
+    return NextResponse.json({
       message: "Teste de variáveis de ambiente",
-    timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       envVars,
       googleCloud: {
