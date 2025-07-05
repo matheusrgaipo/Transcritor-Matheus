@@ -71,9 +71,9 @@ export function createSpeechClient() {
       // Tentar diferentes formatos
       console.log("🔧 [LOG] Tentando corrigir formato automaticamente...");
       
-      // Remover aspas se existirem
-      let correctedKey = formattedPrivateKey.replace(/^"/, '').replace(/"$/, '');
-      console.log("🔍 [LOG] Após remover aspas - tamanho:", correctedKey.length);
+             // Remover aspas se existirem
+       const correctedKey = formattedPrivateKey.replace(/^"/, '').replace(/"$/, '');
+       console.log("🔍 [LOG] Após remover aspas - tamanho:", correctedKey.length);
       
       // Tentar diferentes padrões de escape
       const patterns = [
