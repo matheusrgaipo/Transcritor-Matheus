@@ -202,7 +202,7 @@ export default function Home() {
       <section className="w-full max-w-4xl flex flex-col lg:flex-row gap-8">
         {/* Coluna Principal - Upload e Transcrição */}
         <div className="flex-1 flex flex-col items-center">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center">Adicione um arquivo para transcrição</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center">Adicione o arquivo para transcrição</h1>
           
           {/* Área de Upload Melhorada */}
           <div 
