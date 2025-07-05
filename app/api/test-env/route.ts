@@ -19,6 +19,21 @@ export async function GET() {
       NEXT_PUBLIC_APP_URL: !!process.env.NEXT_PUBLIC_APP_URL,
     };
 
+    // Capturar logs detalhados
+    const logs: string[] = [];
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+    
+    console.log = (...args) => {
+      logs.push(`[LOG] ${args.join(' ')}`);
+      originalConsoleLog(...args);
+    };
+    
+    console.error = (...args) => {
+      logs.push(`[ERROR] ${args.join(' ')}`);
+      originalConsoleError(...args);
+    };
+
     // Testar Google Cloud Speech Client
     let googleCloudStatus = "❌ Não configurado";
     let googleCloudError = null;
@@ -48,7 +63,24 @@ export async function GET() {
     } catch (error) {
       googleCloudError = error instanceof Error ? error.message : "Erro desconhecido";
       googleCloudStatus = `❌ Erro: ${googleCloudError}`;
+    } finally {
+      // Restaurar console original
+      console.log = originalConsoleLog;
+      console.error = originalConsoleError;
     }
+
+    // Análise detalhada da chave privada
+    const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY_STORAGE;
+    const keyAnalysis = {
+      length: privateKey?.length || 0,
+      hasQuotes: privateKey?.startsWith('"') && privateKey?.endsWith('"'),
+      hasBeginMarker: privateKey?.includes("-----BEGIN PRIVATE KEY-----"),
+      hasEndMarker: privateKey?.includes("-----END PRIVATE KEY-----"),
+      hasEscapedNewlines: privateKey?.includes("\\n"),
+      hasRealNewlines: privateKey?.includes("\n"),
+      firstChars: privateKey?.substring(0, 50) || "N/A",
+      lastChars: privateKey?.substring(privateKey.length - 50) || "N/A",
+    };
 
     return NextResponse.json({
       message: "Teste de variáveis de ambiente",
@@ -61,7 +93,9 @@ export async function GET() {
         projectId: process.env.GOOGLE_CLOUD_PROJECT_ID_STORAGE || "Não configurado",
         clientEmail: process.env.GOOGLE_CLOUD_CLIENT_EMAIL_STORAGE ? 
           process.env.GOOGLE_CLOUD_CLIENT_EMAIL_STORAGE.substring(0, 20) + "..." : "Não configurado",
-      }
+      },
+      privateKeyAnalysis: keyAnalysis,
+      detailedLogs: logs
     });
   } catch (error) {
     return NextResponse.json({
