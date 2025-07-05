@@ -1,34 +1,40 @@
 import { SpeechClient } from "@google-cloud/speech";
+import { GoogleAuth } from "google-auth-library";
 
 export function createSpeechClient() {
-  console.log("🔧 [LOG] === INICIANDO CRIAÇÃO DO GOOGLE SPEECH CLIENT ===");
+  console.log("🔧 [LOG] === INICIANDO CRIAÇÃO DO GOOGLE SPEECH CLIENT (OAuth 2.0) ===");
   
-  // Verificar se as credenciais estão disponíveis
-  console.log("🔍 [LOG] Verificando credenciais do Google Cloud...");
-  const clientEmail = process.env.GOOGLE_CLOUD_CLIENT_EMAIL_STORAGE;
-  const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY_STORAGE;
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID_STORAGE;
+  // Verificar se as credenciais OAuth estão disponíveis
+  console.log("🔍 [LOG] Verificando credenciais OAuth 2.0 do Google Cloud...");
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
 
-  console.log("📧 [LOG] Client Email presente:", !!clientEmail);
-  console.log("🔑 [LOG] Private Key presente:", !!privateKey);
-  console.log("🆔 [LOG] Project ID presente:", !!projectId);
+  console.log("🆔 [LOG] Client ID presente:", !!clientId);
+  console.log("🔐 [LOG] Client Secret presente:", !!clientSecret);
+  console.log("🔗 [LOG] Redirect URI presente:", !!redirectUri);
+  console.log("🔄 [LOG] Refresh Token presente:", !!refreshToken);
+  console.log("📁 [LOG] Project ID presente:", !!projectId);
 
   // Diagnóstico detalhado das variáveis
   const missingVars = [];
-  if (!clientEmail) missingVars.push("GOOGLE_CLOUD_CLIENT_EMAIL_STORAGE");
-  if (!privateKey) missingVars.push("GOOGLE_CLOUD_PRIVATE_KEY_STORAGE");
-  if (!projectId) missingVars.push("GOOGLE_CLOUD_PROJECT_ID_STORAGE");
+  if (!clientId) missingVars.push("GOOGLE_CLIENT_ID");
+  if (!clientSecret) missingVars.push("GOOGLE_CLIENT_SECRET");
+  if (!redirectUri) missingVars.push("GOOGLE_REDIRECT_URI");
+  if (!projectId) missingVars.push("GOOGLE_CLOUD_PROJECT_ID");
 
   if (missingVars.length > 0) {
-    console.error("❌ [LOG] Variáveis de ambiente faltando:", missingVars.join(", "));
+    console.error("❌ [LOG] Variáveis de ambiente OAuth faltando:", missingVars.join(", "));
     console.error("🔍 [LOG] Todas as variáveis de ambiente disponíveis:");
     
-    // Listar todas as variáveis que começam com GOOGLE_CLOUD
-    const googleCloudVars = Object.keys(process.env).filter(key => key.startsWith('GOOGLE_CLOUD'));
-    console.error("📋 [LOG] Variáveis Google Cloud encontradas:", googleCloudVars);
+    // Listar todas as variáveis que começam com GOOGLE_
+    const googleVars = Object.keys(process.env).filter(key => key.startsWith('GOOGLE_'));
+    console.error("📋 [LOG] Variáveis Google encontradas:", googleVars);
     
     // Mostrar valores parciais (sem expor credenciais completas)
-    googleCloudVars.forEach(varName => {
+    googleVars.forEach(varName => {
       const value = process.env[varName];
       if (value) {
         console.error(`   ${varName}: ${value.substring(0, 20)}...`);
@@ -37,97 +43,57 @@ export function createSpeechClient() {
       }
     });
     
-    throw new Error(`Credenciais do Google Cloud não configuradas. Variáveis faltando: ${missingVars.join(", ")}`);
+    throw new Error(`Credenciais OAuth 2.0 não configuradas. Variáveis faltando: ${missingVars.join(", ")}`);
   }
 
   try {
-    console.log("🔄 [LOG] Formatando chave privada...");
-    console.log("🔍 [LOG] Chave privada original - tamanho:", privateKey.length);
-    console.log("🔍 [LOG] Chave privada original - primeiros 100 chars:", privateKey.substring(0, 100));
-    console.log("🔍 [LOG] Chave privada original - últimos 100 chars:", privateKey.substring(privateKey.length - 100));
+    console.log("🔧 [LOG] Configurando autenticação OAuth 2.0...");
     
-    // Limpar e formatar a chave privada
-    const formattedPrivateKey = privateKey.replace(/\\n/g, "\n");
-    console.log("🔍 [LOG] Chave privada formatada - tamanho:", formattedPrivateKey.length);
-    console.log("🔍 [LOG] Chave privada formatada - primeiros 100 chars:", formattedPrivateKey.substring(0, 100));
-    console.log("🔍 [LOG] Chave privada formatada - últimos 100 chars:", formattedPrivateKey.substring(formattedPrivateKey.length - 100));
-    console.log("✅ [LOG] Chave privada formatada");
-    
-    console.log("🔍 [LOG] Validando formato da chave privada...");
-    const hasBegin = formattedPrivateKey.includes("-----BEGIN PRIVATE KEY-----");
-    const hasEnd = formattedPrivateKey.includes("-----END PRIVATE KEY-----");
-    
-    console.log("🔍 [LOG] Chave contém BEGIN:", hasBegin);
-    console.log("🔍 [LOG] Chave contém END:", hasEnd);
-    
-    // Verificar se a chave privada tem o formato correto
-    if (!hasBegin || !hasEnd) {
-      console.error("❌ [LOG] Formato da chave privada inválido");
-      console.error("🔍 [LOG] Chave contém BEGIN:", hasBegin);
-      console.error("🔍 [LOG] Chave contém END:", hasEnd);
-      console.error("🔍 [LOG] Primeiros 200 caracteres da chave:", formattedPrivateKey.substring(0, 200));
-      console.error("🔍 [LOG] Últimos 200 caracteres da chave:", formattedPrivateKey.substring(formattedPrivateKey.length - 200));
+    if (refreshToken) {
+      console.log("🔄 [LOG] Usando Refresh Token para autenticação automática");
       
-      // Tentar diferentes formatos
-      console.log("🔧 [LOG] Tentando corrigir formato automaticamente...");
+      // Configurar OAuth 2.0 com refresh token
+      const auth = new GoogleAuth({
+        credentials: {
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+        },
+        scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+        projectId: projectId,
+      });
       
-             // Remover aspas se existirem
-       const correctedKey = formattedPrivateKey.replace(/^"/, '').replace(/"$/, '');
-       console.log("🔍 [LOG] Após remover aspas - tamanho:", correctedKey.length);
+      console.log("✅ [LOG] Autenticação OAuth configurada com refresh token");
       
-      // Tentar diferentes padrões de escape
-      const patterns = [
-        correctedKey.replace(/\\n/g, "\n"),
-        correctedKey.replace(/\\\\/g, "\\"),
-        correctedKey.replace(/\\"/g, '"'),
-        correctedKey.replace(/\\r\\n/g, "\n"),
-        correctedKey.replace(/\\r/g, "\n"),
-      ];
+      // Criar cliente Speech com autenticação OAuth
+      const speechClient = new SpeechClient({
+        auth: auth,
+        projectId: projectId,
+      });
       
-      for (let i = 0; i < patterns.length; i++) {
-        const testKey = patterns[i];
-        const testHasBegin = testKey.includes("-----BEGIN PRIVATE KEY-----");
-        const testHasEnd = testKey.includes("-----END PRIVATE KEY-----");
-        
-        console.log(`🧪 [LOG] Teste ${i + 1}: BEGIN=${testHasBegin}, END=${testHasEnd}`);
-        
-        if (testHasBegin && testHasEnd) {
-          console.log(`✅ [LOG] Formato corrigido no teste ${i + 1}`);
-          console.log("🔍 [LOG] Chave corrigida - primeiros 100 chars:", testKey.substring(0, 100));
-          console.log("🔍 [LOG] Chave corrigida - últimos 100 chars:", testKey.substring(testKey.length - 100));
-          
-          // Usar a chave corrigida
-          const speechClient = new SpeechClient({
-            credentials: {
-              client_email: clientEmail,
-              private_key: testKey,
-            },
-            projectId: projectId,
-          });
-          console.log("✅ [LOG] SpeechClient criado com sucesso usando chave corrigida");
-          return speechClient;
-        }
-      }
+      console.log("✅ [LOG] SpeechClient criado com sucesso usando OAuth 2.0");
+      return speechClient;
       
-      throw new Error("Formato da chave privada inválido - não foi possível corrigir automaticamente");
+    } else {
+      console.log("⚠️ [LOG] Refresh Token não encontrado");
+      console.log("🔗 [LOG] Será necessário implementar fluxo de autorização");
+      
+      // Sem refresh token, precisamos implementar fluxo de autorização
+      // Por enquanto, vamos gerar a URL de autorização
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent('https://www.googleapis.com/auth/cloud-platform')}&` +
+        `access_type=offline&` +
+        `prompt=consent`;
+      
+      console.log("🔗 [LOG] URL de autorização gerada:");
+      console.log("🔗 [LOG]", authUrl);
+      
+      throw new Error(`Refresh Token necessário. Acesse esta URL para autorizar: ${authUrl}`);
     }
-    console.log("✅ [LOG] Formato da chave privada válido");
-
-    console.log("🔧 [LOG] Configurando Google Speech Client...");
-    console.log("📧 [LOG] Client Email:", clientEmail);
-    console.log("🔑 [LOG] Project ID:", projectId);
     
-    console.log("🏗️ [LOG] Criando instância do SpeechClient...");
-    const speechClient = new SpeechClient({
-      credentials: {
-        client_email: clientEmail,
-        private_key: formattedPrivateKey,
-      },
-      projectId: projectId,
-    });
-    console.log("✅ [LOG] SpeechClient criado com sucesso");
-    
-    return speechClient;
   } catch (error) {
     console.error("❌ [LOG] Erro ao criar Google Speech Client:", error);
     console.error("🔍 [LOG] Stack trace do erro:", error instanceof Error ? error.stack : 'N/A');
@@ -137,26 +103,56 @@ export function createSpeechClient() {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     console.error("📄 [LOG] Mensagem de erro:", errorMessage);
     
-    if (errorMessage.includes("ffmpeg")) {
-      console.error("🚨 [LOG] ERRO DE FFMPEG DETECTADO NA CRIAÇÃO DO SPEECH CLIENT!");
-    }
-    
-    throw new Error(`Erro na configuração do Google Cloud: ${errorMessage}`);
+    throw new Error(`Erro na configuração OAuth 2.0: ${errorMessage}`);
   } finally {
     console.log("🏁 [LOG] === CRIAÇÃO DO SPEECH CLIENT FINALIZADA ===");
   }
 }
 
+// Função para trocar código de autorização por refresh token
+export async function exchangeCodeForTokens(authCode: string) {
+  console.log("🔄 [LOG] === TROCANDO CÓDIGO POR TOKENS ===");
+  
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  
+  try {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code: authCode,
+        client_id: clientId!,
+        client_secret: clientSecret!,
+        redirect_uri: redirectUri!,
+        grant_type: 'authorization_code',
+      }),
+    });
+    
+    const tokens = await response.json();
+    console.log("✅ [LOG] Tokens obtidos com sucesso");
+    console.log("🔑 [LOG] Refresh Token:", tokens.refresh_token ? "Presente" : "Ausente");
+    
+    return tokens;
+  } catch (error) {
+    console.error("❌ [LOG] Erro ao trocar código por tokens:", error);
+    throw error;
+  }
+}
+
 // Função para testar a conexão com o Google Cloud
 export async function testGoogleCloudConnection() {
-  console.log("🧪 [LOG] === INICIANDO TESTE DE CONEXÃO GOOGLE CLOUD ===");
+  console.log("🧪 [LOG] === INICIANDO TESTE DE CONEXÃO GOOGLE CLOUD (OAuth 2.0) ===");
   
   try {
     console.log("🔧 [LOG] Criando cliente para teste...");
     const client = createSpeechClient();
     console.log("✅ [LOG] Cliente criado para teste");
     
-    console.log("📡 [LOG] Fazendo chamada de teste para Google Cloud...");
+    console.log("📡 [LOG] Testando autenticação com Google Cloud...");
     // Fazer uma chamada simples para testar a autenticação
     await client.longRunningRecognize({
       config: {
@@ -179,10 +175,6 @@ export async function testGoogleCloudConnection() {
     
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     console.error("📄 [LOG] Mensagem de erro de teste:", errorMessage);
-    
-    if (errorMessage.includes("ffmpeg")) {
-      console.error("🚨 [LOG] ERRO DE FFMPEG DETECTADO NO TESTE DE CONEXÃO!");
-    }
     
     return false;
   } finally {
