@@ -3,14 +3,35 @@ import { writeFile, unlink, readFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 
-// Função para verificar se o arquivo é áudio
-function isAudioFile(filename: string): boolean {
+// Função para verificar se o arquivo é áudio e retornar informações
+function getAudioInfo(filename: string): { isAudio: boolean; extension: string; encoding?: string; sampleRate?: number } {
   console.log("🔍 [LOG] Verificando se arquivo é áudio:", filename);
   const audioExtensions = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.webm'];
-  const ext = filename.toLowerCase().split('.').pop();
+  const ext = filename.toLowerCase().split('.').pop() || '';
   const isAudio = audioExtensions.includes(`.${ext}`);
+  
+  // Mapear extensões para configurações do Google Speech API
+  const audioConfig: Record<string, { encoding: string; sampleRate: number }> = {
+    'mp3': { encoding: 'MP3', sampleRate: 16000 },
+    'wav': { encoding: 'LINEAR16', sampleRate: 16000 },
+    'flac': { encoding: 'FLAC', sampleRate: 16000 },
+    'aac': { encoding: 'AAC', sampleRate: 16000 },
+    'ogg': { encoding: 'OGG_OPUS', sampleRate: 16000 },
+    'm4a': { encoding: 'MP4', sampleRate: 16000 },
+    'webm': { encoding: 'WEBM_OPUS', sampleRate: 48000 }
+  };
+  
+  const config = audioConfig[ext] || { encoding: 'LINEAR16', sampleRate: 16000 };
+  
   console.log("🔍 [LOG] Extensão encontrada:", ext, "| É áudio:", isAudio);
-  return isAudio;
+  console.log("🔍 [LOG] Configuração detectada:", config);
+  
+  return {
+    isAudio,
+    extension: ext,
+    encoding: config.encoding,
+    sampleRate: config.sampleRate
+  };
 }
 
 // Função para processar áudio diretamente (sem conversão)
@@ -79,14 +100,15 @@ export async function POST(req: NextRequest) {
     console.log("✅ [LOG] Tamanho do arquivo OK:", file.size, "bytes");
 
     console.log("🔍 [LOG] Verificando formato do arquivo...");
-    // Verificar se é arquivo de áudio
-    if (!isAudioFile(file.name)) {
+    // Verificar se é arquivo de áudio e obter configurações
+    const audioInfo = getAudioInfo(file.name);
+    if (!audioInfo.isAudio) {
       console.log("❌ [LOG] Formato não suportado:", file.name);
       return NextResponse.json({ 
         message: "Formato não suportado. Envie um arquivo de áudio (.mp3, .wav, .flac, .aac, .ogg, .m4a, .webm)." 
       }, { status: 400 });
     }
-    console.log("✅ [LOG] Formato de arquivo válido");
+    console.log("✅ [LOG] Formato de arquivo válido:", audioInfo);
 
     console.log("🔧 [LOG] Gerando nome único para arquivo temporário...");
     // Gerar nome único para arquivo temporário
@@ -120,7 +142,14 @@ export async function POST(req: NextRequest) {
     const transcriptionResponse = await fetch(transcriptionUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ audioBase64 }),
+      body: JSON.stringify({ 
+        audioBase64,
+        audioFormat: {
+          encoding: audioInfo.encoding,
+          sampleRateHertz: audioInfo.sampleRate,
+          extension: audioInfo.extension
+        }
+      }),
     });
     console.log("📡 [LOG] Resposta da API de transcrição recebida. Status:", transcriptionResponse.status);
 

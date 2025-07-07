@@ -7,8 +7,9 @@ export async function POST(req: NextRequest) {
   
   try {
     console.log("📥 [LOG] Recebendo dados JSON...");
-    const { audioBase64 } = await req.json();
+    const { audioBase64, audioFormat } = await req.json();
     console.log("✅ [LOG] Dados JSON recebidos");
+    console.log("🎵 [LOG] Formato de áudio recebido:", audioFormat);
 
     if (!audioBase64) {
       console.log("❌ [LOG] Áudio em base64 não fornecido");
@@ -35,11 +36,19 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("⚙️ [LOG] Configurando requisição de transcrição...");
-    // Configuração da transcrição
+    
+    // ✅ CORREÇÃO: Usar formato detectado automaticamente
+    const encoding = audioFormat?.encoding || 'LINEAR16';
+    const sampleRateHertz = audioFormat?.sampleRateHertz || 16000;
+    
+    console.log("🎯 [LOG] Encoding detectado:", encoding);
+    console.log("🎯 [LOG] Sample Rate detectado:", sampleRateHertz);
+    
+    // Configuração da transcrição com formato automático
     const request = {
       config: {
-        encoding: 'WEBM_OPUS' as const, // Formato mais comum para arquivos web
-        sampleRateHertz: 48000, // Taxa padrão para WebM
+        encoding: encoding, // Usar encoding detectado
+        sampleRateHertz: sampleRateHertz,
         languageCode: 'pt-BR',
         alternativeLanguageCodes: ['pt-PT', 'en-US'],
         enableAutomaticPunctuation: true,
@@ -51,7 +60,7 @@ export async function POST(req: NextRequest) {
         content: audioBase64,
       },
     };
-    console.log("✅ [LOG] Configuração da requisição criada");
+    console.log("✅ [LOG] Configuração da requisição criada com formato:", encoding, "e sample rate:", sampleRateHertz);
 
     console.log("🔄 [LOG] Enviando para Google Speech API...");
     
