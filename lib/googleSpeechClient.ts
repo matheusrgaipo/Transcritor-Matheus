@@ -1,5 +1,5 @@
 import { SpeechClient } from "@google-cloud/speech";
-import { OAuth2Client } from "google-auth-library";
+import { GoogleAuth } from "google-auth-library";
 
 export function createSpeechClient() {
   console.log("🔧 [LOG] === INICIANDO CRIAÇÃO DO GOOGLE SPEECH CLIENT (OAuth 2.0) ===");
@@ -52,23 +52,23 @@ export function createSpeechClient() {
     if (refreshToken) {
       console.log("🔄 [LOG] Usando Refresh Token para autenticação automática");
       
-      // ✅ CORREÇÃO: Criar OAuth2Client explicitamente
-      const oauth2Client = new OAuth2Client({
-        clientId: clientId,
-        clientSecret: clientSecret,
-        redirectUri: redirectUri,
+      // ✅ CORREÇÃO: Configurar GoogleAuth para OAuth 2.0 explicitamente
+      const auth = new GoogleAuth({
+        scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+        projectId: projectId,
+        credentials: {
+          type: 'authorized_user',
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+        },
       });
       
-      // Configurar refresh token
-      oauth2Client.setCredentials({
-        refresh_token: refreshToken,
-      });
+      console.log("✅ [LOG] GoogleAuth configurado com credenciais OAuth 2.0");
       
-      console.log("✅ [LOG] OAuth2Client configurado com refresh token");
-      
-      // ✅ CORREÇÃO: Passar oauth2Client diretamente para SpeechClient
+      // ✅ CORREÇÃO: Usar GoogleAuth configurado para OAuth 2.0
       const speechClient = new SpeechClient({
-        auth: oauth2Client as any, // Força o tipo para evitar erro de compatibilidade
+        auth: auth,
         projectId: projectId,
       });
       
